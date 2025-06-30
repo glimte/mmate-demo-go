@@ -1,5 +1,8 @@
 FROM golang:1.23-alpine AS builder
 
+# Install git for Go module downloads
+RUN apk add --no-cache git
+
 WORKDIR /app
 
 # Copy go files
