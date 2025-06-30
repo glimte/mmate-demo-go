@@ -1,0 +1,59 @@
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: mmate-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  container-a:
+    build:
+      context: ./container-a
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672/
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  container-b:
+    build:
+      context: ./container-b
+      dockerfile: Dockerfile
+    container_name: order-processor
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672/
+    restart: unless-stopped
+
+  container-c:
+    build:
+      context: ./container-c
+      dockerfile: Dockerfile
+    container_name: inventory-shipping
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672/
+    restart: unless-stopped
+
+
+networks:
+  default:
+    name: mmate-network
